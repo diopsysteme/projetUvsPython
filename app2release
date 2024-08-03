@@ -1,0 +1,160 @@
+import tkinter as tk
+from tkinter import messagebox
+import mysql.connector
+
+class App:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Gestion des Inscriptions")
+        
+        # Labels et entrées pour les informations d'inscription
+        self.nom_label = tk.Label(root, text="Nom")
+        self.nom_label.grid(row=0, column=0)
+        self.nom_entry = tk.Entry(root)
+        self.nom_entry.grid(row=0, column=1)
+        
+        self.prenom_label = tk.Label(root, text="Prénom")
+        self.prenom_label.grid(row=1, column=0)
+        self.prenom_entry = tk.Entry(root)
+        self.prenom_entry.grid(row=1, column=1)
+        
+        self.email_label = tk.Label(root, text="Email")
+        self.email_label.grid(row=2, column=0)
+        self.email_entry = tk.Entry(root)
+        self.email_entry.grid(row=2, column=1)
+        
+        self.telephone_label = tk.Label(root, text="Téléphone")
+        self.telephone_label.grid(row=3, column=0)
+        self.telephone_entry = tk.Entry(root)
+        self.telephone_entry.grid(row=3, column=1)
+        
+        # Boutons
+        self.inscrire_button = tk.Button(root, text="Inscrire", command=self.inscrire)
+        self.inscrire_button.grid(row=4, column=0, columnspan=2)
+        
+        self.afficher_button = tk.Button(root, text="Afficher les inscrits", command=self.afficher_inscrits)
+        self.afficher_button.grid(row=5, column=0, columnspan=2)
+        
+        self.rechercher_button = tk.Button(root, text="Rechercher", command=self.rechercher)
+        self.rechercher_button.grid(row=6, column=0, columnspan=2)
+        
+        self.modifier_button = tk.Button(root, text="Modifier", command=self.modifier)
+        self.modifier_button.grid(row=7, column=0, columnspan=2)
+        
+    def get_db_connection(self):
+        return mysql.connector.connect(
+            host="localhost",
+            user="mhd",
+            password="passer",
+            database="simac"
+        )
+
+    def inscrire(self):
+        nom = self.nom_entry.get()
+        prenom = self.prenom_entry.get()
+        email = self.email_entry.get()
+        telephone = self.telephone_entry.get()
+        
+        connection = self.get_db_connection()
+        cursor = connection.cursor()
+        cursor.execute("INSERT INTO inscriptions (nom, prenom, email, telephone) VALUES (%s, %s, %s, %s)",
+                       (nom, prenom, email, telephone))
+        connection.commit()
+        cursor.close()
+        connection.close()
+        
+        messagebox.showinfo("Succès", "Inscription réussie!")
+        
+    def afficher_inscrits(self):
+        connection = self.get_db_connection()
+        cursor = connection.cursor()
+        cursor.execute("SELECT * FROM inscriptions")
+        inscriptions = cursor.fetchall()
+        cursor.close()
+        connection.close()
+        
+        inscrits_window = tk.Toplevel(self.root)
+        inscrits_window.title("Liste des Inscrits")
+        
+        for idx, inscription in enumerate(inscriptions):
+            tk.Label(inscrits_window, text=str(inscription)).grid(row=idx, column=0)
+        
+    def rechercher(self):
+        rechercher_window = tk.Toplevel(self.root)
+        rechercher_window.title("Rechercher un inscrit")
+        
+        search_label = tk.Label(rechercher_window, text="Nom ou Email")
+        search_label.grid(row=0, column=0)
+        search_entry = tk.Entry(rechercher_window)
+        search_entry.grid(row=0, column=1)
+        
+        def effectuer_recherche():
+            search_value = search_entry.get()
+            connection = self.get_db_connection()
+            cursor = connection.cursor()
+            cursor.execute("SELECT * FROM inscriptions WHERE nom=%s OR email=%s", (search_value, search_value))
+            result = cursor.fetchall()
+            cursor.close()
+            connection.close()
+            
+            result_window = tk.Toplevel(rechercher_window)
+            result_window.title("Résultats de la recherche")
+            
+            for idx, inscription in enumerate(result):
+                tk.Label(result_window, text=str(inscription)).grid(row=idx, column=0)
+        
+        search_button = tk.Button(rechercher_window, text="Rechercher", command=effectuer_recherche)
+        search_button.grid(row=1, column=0, columnspan=2)
+    
+    def modifier(self):
+        modifier_window = tk.Toplevel(self.root)
+        modifier_window.title("Modifier un inscrit")
+        
+        id_label = tk.Label(modifier_window, text="ID")
+        id_label.grid(row=0, column=0)
+        id_entry = tk.Entry(modifier_window)
+        id_entry.grid(row=0, column=1)
+        
+        nom_label = tk.Label(modifier_window, text="Nom")
+        nom_label.grid(row=1, column=0)
+        nom_entry = tk.Entry(modifier_window)
+        nom_entry.grid(row=1, column=1)
+        
+        prenom_label = tk.Label(modifier_window, text="Prénom")
+        prenom_label.grid(row=2, column=0)
+        prenom_entry = tk.Entry(modifier_window)
+        prenom_entry.grid(row=2, column=1)
+        
+        email_label = tk.Label(modifier_window, text="Email")
+        email_label.grid(row=3, column=0)
+        email_entry = tk.Entry(modifier_window)
+        email_entry.grid(row=3, column=1)
+        
+        telephone_label = tk.Label(modifier_window, text="Téléphone")
+        telephone_label.grid(row=4, column=0)
+        telephone_entry = tk.Entry(modifier_window)
+        telephone_entry.grid(row=4, column=1)
+        
+        def effectuer_modification():
+            id_value = id_entry.get()
+            nom = nom_entry.get()
+            prenom = prenom_entry.get()
+            email = email_entry.get()
+            telephone = telephone_entry.get()
+            
+            connection = self.get_db_connection()
+            cursor = connection.cursor()
+            cursor.execute("UPDATE inscriptions SET nom=%s, prenom=%s, email=%s, telephone=%s WHERE id=%s",
+                           (nom, prenom, email, telephone, id_value))
+            connection.commit()
+            cursor.close()
+            connection.close()
+            
+            messagebox.showinfo("Succès", "Modification réussie!")
+        
+        modify_button = tk.Button(modifier_window, text="Modifier", command=effectuer_modification)
+        modify_button.grid(row=5, column=0, columnspan=2)
+
+root = tk.Tk()
+app = App(root)
+root.mainloop()
